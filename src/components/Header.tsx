@@ -1,9 +1,12 @@
 
 import React from 'react';
-import { Bike, Car, Earth } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bike, Earth } from 'lucide-react';
 import { Button } from './ui/button';
 
 const Header = () => {
+  const navigate = useNavigate();
+
   return (
     <header className="sticky top-0 z-10 w-full bg-white border-b border-earth-200 shadow-sm">
       <div className="container flex items-center justify-between h-16 px-4 mx-auto">
@@ -28,11 +31,12 @@ const Header = () => {
         </nav>
         
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="p-2 rounded-full">
-            <span className="sr-only">User profile</span>
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-              <span className="text-green-800 font-medium text-sm">JD</span>
-            </div>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/login')}
+            className="font-medium text-green-800 hover:text-green-600"
+          >
+            Login
           </Button>
         </div>
       </div>
