@@ -1,14 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Earth, User } from 'lucide-react';
 import { Button } from './ui/button';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase';
 
 const Header = () => {
   const navigate = useNavigate();

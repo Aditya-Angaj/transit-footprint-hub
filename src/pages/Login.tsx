@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -6,21 +5,42 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import { supabase } from '@/lib/supabase';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement Supabase authentication here
-    toast({
-      title: "Coming soon!",
-      description: "Login functionality will be implemented with Supabase authentication.",
-    });
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "You have successfully logged in.",
+      });
+      navigate('/profile');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,8 +96,12 @@ const Login = () => {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-              Login
+            <Button 
+              type="submit" 
+              className="w-full bg-green-600 hover:bg-green-700"
+              disabled={isLoading}
+            >
+              {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
         </CardContent>
