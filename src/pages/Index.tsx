@@ -1,12 +1,44 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import Header from '@/components/Header';
+import TripPlanner from '@/components/TripPlanner';
+import CarbonCalculator from '@/components/CarbonCalculator';
+import CommunitySection from '@/components/CommunitySection';
+import TransitUpdates from '@/components/TransitUpdates';
+import Footer from '@/components/Footer';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col bg-green-50/30">
+      <Header />
+      
+      <main className="flex-grow">
+        {/* Hero section */}
+        <section className="bg-gradient-to-br from-green-700 to-green-900 text-white py-16">
+          <div className="container px-4 mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Travel Sustainably, Live Better</h1>
+            <p className="text-xl text-green-100 max-w-2xl mx-auto mb-8">
+              GreenCommute helps you find eco-friendly transportation options, track your carbon footprint, and earn rewards for making sustainable choices.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="#trip-planner" className="inline-flex items-center justify-center rounded-md bg-white text-green-800 font-medium px-6 py-3 shadow hover:bg-green-50">
+                Plan Your Trip
+              </a>
+              <a href="#carbon-calculator" className="inline-flex items-center justify-center rounded-md border border-green-300 text-white font-medium px-6 py-3 hover:bg-green-800">
+                Calculate Your Impact
+              </a>
+            </div>
+          </div>
+        </section>
+        
+        {/* Main content sections */}
+        <TripPlanner />
+        <CarbonCalculator />
+        <CommunitySection />
+        <TransitUpdates />
+      </main>
+      
+      <Footer />
     </div>
   );
 };
