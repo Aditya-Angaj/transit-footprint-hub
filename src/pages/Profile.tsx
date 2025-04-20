@@ -62,7 +62,7 @@ const Profile = () => {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/login');
+      navigate('/');
     } catch (error: any) {
       toast({
         variant: "destructive",
