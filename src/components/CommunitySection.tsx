@@ -5,8 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 const CommunitySection = () => {
+  const { toast } = useToast();
+  
   // Mock data for community carpools
   const carpools = [
     {
@@ -88,6 +92,50 @@ const CommunitySection = () => {
       progress: 62
     }
   ];
+
+  const handleJoinChallenge = async (challengeId: number) => {
+    try {
+      const { error } = await supabase
+        .from('challenge_participants')
+        .insert({ challenge_id: challengeId, user_id: supabase.auth.user()?.id });
+
+      if (error) throw error;
+
+      toast({
+        title: "Successfully joined the challenge!",
+        description: "You can now track your progress in your profile.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error joining challenge",
+        description: "Please try again later.",
+      });
+    }
+  };
+
+  const handleStartCarpool = async () => {
+    try {
+      const { error } = await supabase.from('carpools').insert({
+        user_id: supabase.auth.user()?.id,
+        status: 'draft'
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Creating new carpool",
+        description: "You'll be redirected to set up your carpool details.",
+      });
+      // You would typically navigate to a form page here
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error creating carpool",
+        description: "Please try again later.",
+      });
+    }
+  };
 
   return (
     <section id="community" className="py-10">
@@ -174,7 +222,11 @@ const CommunitySection = () => {
                   </Card>
                 ))}
                 
-                <Button variant="ghost" className="w-full border border-dashed border-green-300 text-green-700 hover:bg-green-50">
+                <Button 
+                  variant="ghost" 
+                  className="w-full border border-dashed border-green-300 text-green-700 hover:bg-green-50"
+                  onClick={handleStartCarpool}
+                >
                   Start a New Carpool
                 </Button>
               </div>
@@ -226,7 +278,10 @@ const CommunitySection = () => {
                   </CardContent>
                   
                   <CardFooter>
-                    <Button className="w-full bg-sky-500 hover:bg-sky-600">
+                    <Button 
+                      onClick={() => handleJoinChallenge(challenge.id)}
+                      className="w-full bg-sky-500 hover:bg-sky-600"
+                    >
                       Join Challenge
                     </Button>
                   </CardFooter>

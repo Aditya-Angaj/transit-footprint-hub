@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Clock, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -6,8 +5,11 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 const TransitUpdates = () => {
+  const { toast } = useToast();
+
   // Fetch user progress data
   const { data: progressData } = useQuery({
     queryKey: ['userProgress'],
@@ -26,31 +28,21 @@ const TransitUpdates = () => {
     }
   });
 
-  // Service alerts for India/Mumbai region
-  const serviceAlerts = [
-    {
-      id: 1,
-      type: 'Traffic',
-      message: 'Heavy traffic on Thane-Belapur Road due to construction work',
-      affectedRoutes: ['Palm Beach Road', 'Thane-Belapur Road'],
-      timeStamp: new Date().toLocaleTimeString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+  // Fetch real-time service alerts
+  const { data: serviceAlerts } = useQuery({
+    queryKey: ['serviceAlerts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('service_alerts')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     },
-    {
-      id: 2,
-      type: 'Weather',
-      message: 'Expected rain showers in Navi Mumbai region',
-      affectedRoutes: ['All Routes'],
-      timeStamp: new Date().toLocaleTimeString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
-  ];
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
 
   return (
     <section id="transit-updates" className="py-10 bg-green-50">
@@ -96,27 +88,37 @@ const TransitUpdates = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-amber-600 flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Service Alerts
+                Live Service Alerts
               </CardTitle>
-              <CardDescription>Latest updates about service changes (IST)</CardDescription>
+              <CardDescription>Real-time updates (IST)</CardDescription>
             </CardHeader>
             
             <CardContent>
               <div className="space-y-4">
-                {serviceAlerts.map((alert) => (
-                  <div key={alert.id} className="p-3 rounded-md bg-amber-50 border border-amber-100">
-                    <div className="flex justify-between items-start mb-2">
-                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 mb-2">
-                        {alert.type}
-                      </Badge>
-                      <span className="text-xs text-gray-500">{alert.timeStamp} IST</span>
+                {serviceAlerts?.length === 0 ? (
+                  <p className="text-sm text-gray-500">No active alerts at the moment</p>
+                ) : (
+                  serviceAlerts?.map((alert) => (
+                    <div key={alert.id} className="p-3 rounded-md bg-amber-50 border border-amber-100">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 mb-2">
+                          {alert.type}
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          {new Date(alert.created_at).toLocaleTimeString('en-IN', {
+                            timeZone: 'Asia/Kolkata',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })} IST
+                        </span>
+                      </div>
+                      <p className="text-sm mb-2">{alert.message}</p>
+                      <div className="text-xs text-gray-500">
+                        Affected: {alert.affected_routes.join(', ')}
+                      </div>
                     </div>
-                    <p className="text-sm mb-2">{alert.message}</p>
-                    <div className="text-xs text-gray-500">
-                      Affected: {alert.affectedRoutes.join(', ')}
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
