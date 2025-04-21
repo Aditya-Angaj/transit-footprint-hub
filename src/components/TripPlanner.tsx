@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import TransportModes from './TransportModes';
+import { useToast } from '@/hooks/use-toast';
 
 const TripPlanner = () => {
   const [origin, setOrigin] = useState('');
@@ -12,10 +13,35 @@ const TripPlanner = () => {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowResults(true);
+    
+    if (!origin || !destination) {
+      toast({
+        title: "Missing information",
+        description: "Please enter both origin and destination",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsCalculating(true);
+    
+    try {
+      // This will be handled in the TransportModes component
+      setShowResults(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not calculate routes. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
   return (
@@ -87,8 +113,12 @@ const TripPlanner = () => {
               </div>
               
               <div className="flex justify-center">
-                <Button type="submit" className="bg-green-600 hover:bg-green-700 px-8">
-                  Find Routes
+                <Button 
+                  type="submit" 
+                  className="bg-green-600 hover:bg-green-700 px-8"
+                  disabled={isCalculating}
+                >
+                  {isCalculating ? 'Calculating...' : 'Find Routes'}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
