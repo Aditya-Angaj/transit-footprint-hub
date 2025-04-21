@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Car, Earth, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -95,9 +96,21 @@ const CommunitySection = () => {
 
   const handleJoinChallenge = async (challengeId: number) => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Authentication required",
+          description: "Please log in to join challenges.",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('challenge_participants')
-        .insert({ challenge_id: challengeId, user_id: supabase.auth.user()?.id });
+        .insert({ challenge_id: challengeId, user_id: user.id });
 
       if (error) throw error;
 
@@ -116,8 +129,20 @@ const CommunitySection = () => {
 
   const handleStartCarpool = async () => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Authentication required",
+          description: "Please log in to create a carpool.",
+        });
+        return;
+      }
+
       const { error } = await supabase.from('carpools').insert({
-        user_id: supabase.auth.user()?.id,
+        user_id: user.id,
         status: 'draft'
       });
 
