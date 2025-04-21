@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 interface TransportModeProps {
   origin: string;
   destination: string;
+  apiKey: string;
 }
 
 interface RouteOption {
@@ -22,7 +23,13 @@ interface RouteOption {
   tags: string[];
 }
 
-const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) => {
+interface GoogleMatrixResponseRowElement {
+  status: string;
+  duration: { text: string; value: number };
+  distance: { text: string; value: number };
+}
+
+const TransportModes: React.FC<TransportModeProps> = ({ origin, destination, apiKey }) => {
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -31,146 +38,123 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
     const calculateRoutes = async () => {
       setLoading(true);
       try {
-        // Calculate distances
-        const distance = await calculateDistance(origin, destination);
-        
-        // Create route options based on real distance
-        const routeOptions = generateRouteOptions(distance);
-        setRoutes(routeOptions);
+        // Fetch travel data for each mode using Google Distance Matrix API
+        const [walk, bike, transit, driving] = await Promise.all([
+          fetchGoogleMatrix(origin, destination, "walking", apiKey),
+          fetchGoogleMatrix(origin, destination, "bicycling", apiKey),
+          fetchGoogleMatrix(origin, destination, "transit", apiKey),
+          fetchGoogleMatrix(origin, destination, "driving", apiKey),
+        ]);
+
+        // Prefer using Google values if present, fallback to defaults if needed.
+        setRoutes([
+          {
+            id: 1,
+            mode: 'bike',
+            icon: Bike,
+            title: 'Bike Route',
+            time: bike.durationText || walk.durationText || "N/A",
+            distance: bike.distanceText || walk.distanceText || "N/A",
+            emissions: '0 kg CO₂',
+            emissionReduction: '100%',
+            tags: ['zero-emissions', 'exercise']
+          },
+          {
+            id: 2,
+            mode: 'transit',
+            icon: Bus,
+            title: 'Public Transit',
+            time: transit.durationText || "N/A",
+            distance: transit.distanceText || "N/A",
+            emissions: transit.distanceValue != null 
+              ? `${((transit.distanceValue / 1000) * 0.06).toFixed(1)} kg CO₂`
+              : '—',
+            emissionReduction: transit.distanceValue != null && driving.distanceValue != null
+              ? `${Math.round((1 - ((transit.distanceValue / 1000) * 0.06) / ((driving.distanceValue / 1000) * 0.2)) * 100)}%`
+              : '—',
+            tags: ['low-emissions', 'convenient']
+          },
+          {
+            id: 3,
+            mode: 'walk',
+            title: 'Walking Route',
+            icon: Footprints,
+            time: walk.durationText || "N/A",
+            distance: walk.distanceText || "N/A",
+            emissions: '0 kg CO₂',
+            emissionReduction: '100%',
+            tags: ['zero-emissions', 'exercise']
+          },
+          {
+            id: 4,
+            mode: 'carpool',
+            icon: Caravan,
+            title: 'Carpool',
+            time: driving.durationText || "N/A",
+            distance: driving.distanceText || "N/A",
+            emissions: driving.distanceValue != null
+              ? `${((driving.distanceValue / 1000) * 0.13).toFixed(1)} kg CO₂`
+              : '—',
+            emissionReduction: driving.distanceValue != null
+              ? `${Math.round((1 - 0.13 / 0.2) * 100)}%`
+              : '—',
+            tags: ['shared', 'community']
+          }
+        ]);
+
       } catch (error) {
         console.error("Error calculating routes:", error);
         toast({
           title: "Error",
-          description: "Failed to calculate route distances",
+          description: "Failed to fetch route times from Google Maps API.",
           variant: "destructive"
         });
-        // Fallback to default routes
         setRoutes(getDefaultRoutes());
       } finally {
         setLoading(false);
       }
     };
 
-    if (origin && destination) {
+    if (origin && destination && apiKey) {
       calculateRoutes();
     }
-  }, [origin, destination, toast]);
+  // eslint-disable-next-line
+  }, [origin, destination, apiKey]);
 
-  const calculateDistance = async (start: string, end: string): Promise<number> => {
+  async function fetchGoogleMatrix(
+    origin: string, 
+    destination: string, 
+    mode: string,
+    apiKey: string,
+  ) {
+    const params = new URLSearchParams({
+      origins: origin,
+      destinations: destination,
+      mode,
+      key: apiKey
+    });
+
     try {
-      // Using the Haversine formula to calculate distance
-      // This is a simplified version - in a real app, you'd use a maps API
-      const geocodeLocation = async (address: string) => {
-        // Simulating geocoding
-        // In a real app, you would use something like Google's Geocoding API
-        if (address.toLowerCase().includes('delhi')) {
-          return { lat: 28.6139, lng: 77.2090 };
-        } else if (address.toLowerCase().includes('mumbai')) {
-          return { lat: 19.0760, lng: 72.8777 };
-        } else if (address.toLowerCase().includes('bangalore') || address.toLowerCase().includes('bengaluru')) {
-          return { lat: 12.9716, lng: 77.5946 };
-        } else if (address.toLowerCase().includes('chennai')) {
-          return { lat: 13.0827, lng: 80.2707 };
-        } else if (address.toLowerCase().includes('kolkata')) {
-          return { lat: 22.5726, lng: 88.3639 };
-        } else {
-          // Random coordinates for demo
-          const lat = 20 + Math.random() * 15;
-          const lng = 70 + Math.random() * 15;
-          return { lat, lng };
-        }
-      };
+      const response = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?${params}`);
+      const data = await response.json();
 
-      const startCoords = await geocodeLocation(start);
-      const endCoords = await geocodeLocation(end);
-
-      // Haversine formula
-      const R = 6371; // Earth radius in km
-      const dLat = toRad(endCoords.lat - startCoords.lat);
-      const dLon = toRad(endCoords.lng - startCoords.lng);
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(toRad(startCoords.lat)) * Math.cos(toRad(endCoords.lat)) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
-
-      return distance; // kilometers
-    } catch (error) {
-      console.error("Error calculating distance:", error);
-      return 5; // Default to 5km if calculation fails
-    }
-  };
-
-  const toRad = (value: number) => {
-    return value * Math.PI / 180;
-  };
-
-  const generateRouteOptions = (distanceKm: number): RouteOption[] => {
-    // Calculate travel times based on distance
-    const bikeSpeed = 15; // km/h
-    const walkingSpeed = 5; // km/h
-    const transitSpeed = 25; // km/h
-    const carpoolSpeed = 40; // km/h
-
-    const bikeTime = Math.round(distanceKm / bikeSpeed * 60);
-    const walkTime = Math.round(distanceKm / walkingSpeed * 60);
-    const transitTime = Math.round(distanceKm / transitSpeed * 60);
-    const carpoolTime = Math.round(distanceKm / carpoolSpeed * 60);
-
-    // Calculate emissions
-    const transitEmissions = distanceKm * 0.06; // kg CO2 per km
-    const carpoolEmissions = distanceKm * 0.13; // kg CO2 per km
-    const carEmissions = distanceKm * 0.2; // kg CO2 per km (for comparison)
-
-    return [
-      {
-        id: 1,
-        mode: 'bike',
-        icon: Bike,
-        title: 'Bike Route',
-        time: `${bikeTime} min`,
-        distance: `${distanceKm.toFixed(1)} km`,
-        emissions: '0 kg CO₂',
-        emissionReduction: '100%',
-        tags: ['zero-emissions', 'exercise']
-      },
-      {
-        id: 2,
-        mode: 'transit',
-        icon: Bus,
-        title: 'Public Transit',
-        time: `${transitTime} min`,
-        distance: `${distanceKm.toFixed(1)} km`,
-        emissions: `${transitEmissions.toFixed(1)} kg CO₂`,
-        emissionReduction: `${Math.round((1 - transitEmissions / carEmissions) * 100)}%`,
-        tags: ['low-emissions', 'convenient']
-      },
-      {
-        id: 3,
-        mode: 'walk',
-        title: 'Walking Route',
-        icon: Footprints,
-        time: `${walkTime} min`,
-        distance: `${distanceKm.toFixed(1)} km`,
-        emissions: '0 kg CO₂',
-        emissionReduction: '100%',
-        tags: ['zero-emissions', 'exercise']
-      },
-      {
-        id: 4,
-        mode: 'carpool',
-        icon: Caravan,
-        title: 'Carpool',
-        time: `${carpoolTime} min`,
-        distance: `${distanceKm.toFixed(1)} km`,
-        emissions: `${carpoolEmissions.toFixed(1)} kg CO₂`,
-        emissionReduction: `${Math.round((1 - carpoolEmissions / carEmissions) * 100)}%`,
-        tags: ['shared', 'community']
+      // Google API returns "status" field and rows[].elements[] for results
+      const row: GoogleMatrixResponseRowElement = data?.rows?.[0]?.elements?.[0];
+      if (!row || row.status !== "OK") {
+        return { durationText: "", durationValue: null, distanceText: "", distanceValue: null };
       }
-    ];
-  };
+      return {
+        durationText: row.duration?.text || "",
+        durationValue: row.duration?.value ?? null,
+        distanceText: row.distance?.text || "",
+        distanceValue: row.distance?.value ?? null,
+      };
+    } catch (e) {
+      return { durationText: "", durationValue: null, distanceText: "", distanceValue: null };
+    }
+  }
 
+  // fallback if Google fails
   const getDefaultRoutes = (): RouteOption[] => {
     return [
       {
@@ -281,3 +265,4 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
 };
 
 export default TransportModes;
+

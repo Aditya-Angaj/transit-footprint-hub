@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MapPin, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Clock, ArrowRight, KeyRound } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -14,6 +14,7 @@ const TripPlanner = () => {
   const [time, setTime] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [apiKey, setApiKey] = useState('');
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,11 +28,17 @@ const TripPlanner = () => {
       });
       return;
     }
+    if (!apiKey) {
+      toast({
+        title: "Google Maps API Key Required",
+        description: "Please enter your Google Maps Distance Matrix public API key.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsCalculating(true);
-    
     try {
-      // This will be handled in the TransportModes component
       setShowResults(true);
     } catch (error) {
       toast({
@@ -110,6 +117,28 @@ const TripPlanner = () => {
                     />
                   </div>
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="gmaps-api-key" className="text-green-800 flex items-center">
+                    <KeyRound className="mr-1 h-4 w-4" /> Google Maps API Key
+                  </Label>
+                  <Input 
+                    id="gmaps-api-key"
+                    type="password" 
+                    placeholder="Enter your Distance Matrix API key"
+                    value={apiKey}
+                    onChange={e => setApiKey(e.target.value)}
+                    autoComplete="off"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    This key is only used locally to fetch real distances and times.{' '}
+                    <a 
+                      href="https://developers.google.com/maps/documentation/distance-matrix/get-api-key" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:text-green-700"
+                    >How to get an API key</a>
+                  </div>
+                </div>
               </div>
               
               <div className="flex justify-center">
@@ -131,6 +160,7 @@ const TripPlanner = () => {
               <TransportModes
                 origin={origin}
                 destination={destination}
+                apiKey={apiKey}
               />
             </div>
           )}
@@ -141,3 +171,4 @@ const TripPlanner = () => {
 };
 
 export default TripPlanner;
+
