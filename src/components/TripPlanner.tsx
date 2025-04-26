@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MapPin, Calendar, Clock, ArrowRight, KeyRound } from 'lucide-react';
 import { Button } from './ui/button';
@@ -14,7 +13,7 @@ const TripPlanner = () => {
   const [time, setTime] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState('YOUR_GOOGLE_MAPS_API_KEY_HERE'); // Default API key placeholder
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,7 +135,7 @@ const TripPlanner = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="underline hover:text-green-700"
-                    >How to get an API key</a>
+                    >How to get an API key (highly recommended)</a>
                   </div>
                 </div>
               </div>
@@ -171,4 +170,3 @@ const TripPlanner = () => {
 };
 
 export default TripPlanner;
-
