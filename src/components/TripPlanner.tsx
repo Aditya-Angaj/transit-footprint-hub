@@ -159,7 +159,6 @@ const TripPlanner = () => {
               <TransportModes
                 origin={origin}
                 destination={destination}
-                apiKey={apiKey}
               />
             </div>
           )}
