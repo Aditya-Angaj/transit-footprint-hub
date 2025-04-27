@@ -6,6 +6,7 @@ import CarbonCalculator from '@/components/CarbonCalculator';
 import CommunitySection from '@/components/CommunitySection';
 import TransitUpdates from '@/components/TransitUpdates';
 import Footer from '@/components/Footer';
+import CarpoolList from '@/components/CarpoolList';
 
 const Index = () => {
   return (
@@ -33,6 +34,11 @@ const Index = () => {
         
         {/* Main content sections */}
         <TripPlanner />
+        <div className="py-8">
+          <div className="container px-4 mx-auto">
+            <CarpoolList />
+          </div>
+        </div>
         <CarbonCalculator />
         <CommunitySection />
         <TransitUpdates />

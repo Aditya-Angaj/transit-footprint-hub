@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { MapPin, Calendar, Clock, ArrowRight, KeyRound } from 'lucide-react';
+import { MapPin, Calendar, Clock, ArrowRight, Car } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import TransportModes from './TransportModes';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const TripPlanner = () => {
   const [origin, setOrigin] = useState('');
@@ -47,6 +48,46 @@ const TripPlanner = () => {
       });
     } finally {
       setIsCalculating(false);
+    }
+  };
+
+  const handleCreateCarpool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to create a carpool",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('carpools')
+        .insert({
+          origin,
+          destination,
+          schedule: `${date} ${time}`,
+          available_seats: 4, // Default to 4 seats, you could make this configurable
+          user_id: user.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Your carpool has been created.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create carpool. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -140,7 +181,7 @@ const TripPlanner = () => {
                 </div>
               </div>
               
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-4">
                 <Button 
                   type="submit" 
                   className="bg-green-600 hover:bg-green-700 px-8"
@@ -148,6 +189,16 @@ const TripPlanner = () => {
                 >
                   {isCalculating ? 'Calculating...' : 'Find Routes'}
                   <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+
+                <Button 
+                  type="button"
+                  variant="outline"
+                  className="px-8"
+                  onClick={handleCreateCarpool}
+                >
+                  Create Carpool
+                  <Car className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </form>
