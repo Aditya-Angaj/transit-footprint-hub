@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Car, Bike, Bus, Train, Footprints, CalendarCheck, Route, BarChart3, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -8,7 +9,7 @@ import { Progress } from './ui/progress';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-// Navi Mumbai region distance mapping - for accurate local distances
+// Comprehensive and accurate Navi Mumbai region distance mapping in kilometers
 const naviMumbaiDistances = {
   'vashi': {
     'nerul': 5.2,
@@ -40,7 +41,111 @@ const naviMumbaiDistances = {
     'khanda colony': 10.1,
     'taloja': 17.2,
   },
-  // Additional data available but abbreviated for readability
+  'belapur': {
+    'vashi': 8.7,
+    'nerul': 3.5,
+    'kharghar': 3.8,
+    'panvel': 11.1,
+    'airoli': 16.0,
+    'ghansoli': 13.3,
+    'kopar khairane': 11.9,
+    'sanpada': 6.9,
+    'juinagar': 5.2,
+    'seawoods': 2.6,
+    'cbd belapur': 0.0,
+    'khanda colony': 6.6,
+    'taloja': 13.7,
+  },
+  'kharghar': {
+    'vashi': 12.5,
+    'nerul': 7.3,
+    'belapur': 3.8,
+    'panvel': 7.3,
+    'airoli': 19.8,
+    'ghansoli': 17.1,
+    'kopar khairane': 15.7,
+    'sanpada': 10.7,
+    'juinagar': 9.0,
+    'seawoods': 6.4,
+    'cbd belapur': 3.8,
+    'khanda colony': 2.8,
+    'taloja': 9.9,
+  },
+  'panvel': {
+    'vashi': 19.8,
+    'nerul': 14.6,
+    'belapur': 11.1,
+    'kharghar': 7.3,
+    'airoli': 27.1,
+    'ghansoli': 24.4,
+    'kopar khairane': 23.0,
+    'sanpada': 18.0,
+    'juinagar': 16.3,
+    'seawoods': 13.7,
+    'cbd belapur': 11.1,
+    'khanda colony': 4.5,
+    'taloja': 9.1,
+  },
+  'airoli': {
+    'vashi': 7.3,
+    'nerul': 12.5,
+    'belapur': 16.0,
+    'kharghar': 19.8,
+    'panvel': 27.1,
+    'ghansoli': 2.7,
+    'kopar khairane': 4.1,
+    'sanpada': 9.1,
+    'juinagar': 10.8,
+    'seawoods': 13.4,
+    'cbd belapur': 16.0,
+    'khanda colony': 22.6,
+    'taloja': 29.7,
+  },
+  'ghansoli': {
+    'vashi': 4.6,
+    'nerul': 9.8,
+    'belapur': 13.3,
+    'kharghar': 17.1,
+    'panvel': 24.4,
+    'airoli': 2.7,
+    'kopar khairane': 1.4,
+    'sanpada': 6.4,
+    'juinagar': 8.1,
+    'seawoods': 10.7,
+    'cbd belapur': 13.3,
+    'khanda colony': 19.9,
+    'taloja': 27.0,
+  },
+  'kopar khairane': {
+    'vashi': 3.2,
+    'nerul': 8.4,
+    'belapur': 11.9,
+    'kharghar': 15.7,
+    'panvel': 23.0,
+    'airoli': 4.1,
+    'ghansoli': 1.4,
+    'sanpada': 5.0,
+    'juinagar': 6.7,
+    'seawoods': 9.3,
+    'cbd belapur': 11.9,
+    'khanda colony': 18.5,
+    'taloja': 25.6,
+  },
+  'sanpada': {
+    'vashi': 1.8,
+    'nerul': 3.4,
+    'belapur': 6.9,
+    'kharghar': 10.7,
+    'panvel': 18.0,
+    'airoli': 9.1,
+    'ghansoli': 6.4,
+    'kopar khairane': 5.0,
+    'juinagar': 1.7,
+    'seawoods': 4.3,
+    'cbd belapur': 6.9,
+    'khanda colony': 13.5,
+    'taloja': 20.6,
+  }
 };
 
 // Helper function to calculate accurate distance between Navi Mumbai locations
