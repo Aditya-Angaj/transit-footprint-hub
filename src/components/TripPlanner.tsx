@@ -29,14 +29,6 @@ const TripPlanner = () => {
       });
       return;
     }
-    if (!apiKey) {
-      toast({
-        title: "Google Maps API Key Required",
-        description: "Please enter your Google Maps Distance Matrix public API key.",
-        variant: "destructive"
-      });
-      return;
-    }
     
     setIsCalculating(true);
     try {
@@ -55,6 +47,15 @@ const TripPlanner = () => {
   const handleCreateCarpool = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!origin || !destination) {
+      toast({
+        title: "Missing information",
+        description: "Please enter both origin and destination",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -67,26 +68,32 @@ const TripPlanner = () => {
         return;
       }
 
+      const carpoolData = {
+        origin,
+        destination,
+        schedule: date && time ? `${date} ${time}` : "Flexible",
+        available_seats: 4, // Default to 4 seats, you could make this configurable
+        user_id: user.id,
+        status: 'active' // Explicitly set status to active
+      };
+
       const { error } = await supabase
         .from('carpools')
-        .insert({
-          origin,
-          destination,
-          schedule: `${date} ${time}`,
-          available_seats: 4, // Default to 4 seats, you could make this configurable
-          user_id: user.id
-        });
+        .insert(carpoolData);
 
       if (error) throw error;
 
       toast({
         title: "Success!",
-        description: "Your carpool has been created.",
+        description: "Your carpool has been created and is now available.",
       });
-    } catch (error) {
+      
+      // Reset form
+      setShowResults(false);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create carpool. Please try again.",
+        description: error.message || "Failed to create carpool. Please try again.",
         variant: "destructive"
       });
     }

@@ -7,14 +7,37 @@ import { Progress } from './ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-// Simple algorithm to estimate distances - this is a rough approximation
-const calculateSimpleDistance = (origin: string, destination: string) => {
-  // Since we don't have real coordinates, we'll use a simplified approach
-  // This is just an example - in a real app, you might want to use a more sophisticated method
-  const randomBase = Math.floor(Math.random() * 5) + 3; // Random number between 3-8
+// Improved algorithm to estimate distances based on city names
+const calculateImprovedDistance = (origin: string, destination: string) => {
+  // This is a simplified calculation to make the distances more realistic
+  // We hash the origin and destination names to create somewhat consistent distances
+  const hash = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+  };
+  
+  // Generate a distance between 5 and 50 km based on the names
+  const combinedHash = hash(origin.toLowerCase() + destination.toLowerCase());
+  const distance = (combinedHash % 450) / 10 + 5; // From 5 to 50 km
+  
+  // More realistic time estimations for each mode
+  const drivingSpeed = 50; // km/h for urban travel
+  const walkingSpeed = 5; // km/h
+  const bikingSpeed = 15; // km/h
+  const busSpeed = 30; // km/h including stops
+  const trainSpeed = 60; // km/h for commuter rails
+  
   return {
-    distance: randomBase * 1.5,
-    duration: randomBase * 10
+    distance,
+    drivingTime: Math.ceil((distance / drivingSpeed) * 60), // in minutes
+    walkingTime: Math.ceil((distance / walkingSpeed) * 60),
+    bikingTime: Math.ceil((distance / bikingSpeed) * 60),
+    busTime: Math.ceil((distance / busSpeed) * 60),
+    trainTime: Math.ceil((distance / trainSpeed) * 60)
   };
 };
 
@@ -44,8 +67,25 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
       return;
     }
 
-    // Calculate simplified distance
-    const { distance, duration } = calculateSimpleDistance(origin, destination);
+    // Calculate improved distance metrics
+    const { 
+      distance, 
+      drivingTime, 
+      walkingTime, 
+      bikingTime, 
+      busTime, 
+      trainTime 
+    } = calculateImprovedDistance(origin, destination);
+
+    // Emissions factors (kg CO2 per km)
+    const emissionFactors = {
+      car: 0.192,
+      carpool: 0.096,
+      bus: 0.052,
+      train: 0.041,
+      bike: 0,
+      walk: 0
+    };
 
     // Calculate different route options
     const routeOptions = [
@@ -54,7 +94,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         mode: 'bike',
         icon: Bike,
         title: 'Bike Route',
-        time: `${Math.round(duration * 1.2)} mins`,
+        time: `${bikingTime} mins`,
         distance: `${distance.toFixed(1)} km`,
         emissions: '0 kg CO₂',
         emissionReduction: '100%',
@@ -65,10 +105,10 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         mode: 'transit',
         icon: Bus,
         title: 'Public Transit',
-        time: `${Math.round(duration * 0.8)} mins`,
-        distance: `${(distance * 1.1).toFixed(1)} km`,
-        emissions: `${((distance * 1.1) * 0.06).toFixed(1)} kg CO₂`,
-        emissionReduction: '70%',
+        time: `${busTime} mins`,
+        distance: `${distance.toFixed(1)} km`,
+        emissions: `${(distance * emissionFactors.bus).toFixed(2)} kg CO₂`,
+        emissionReduction: `${Math.round((1 - emissionFactors.bus / emissionFactors.car) * 100)}%`,
         tags: ['low-emissions', 'convenient']
       },
       {
@@ -76,7 +116,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         mode: 'walk',
         icon: Footprints,
         title: 'Walking Route',
-        time: `${Math.round(duration * 3)} mins`,
+        time: `${walkingTime} mins`,
         distance: `${distance.toFixed(1)} km`,
         emissions: '0 kg CO₂',
         emissionReduction: '100%',
@@ -87,10 +127,10 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         mode: 'carpool',
         icon: Caravan,
         title: 'Carpool',
-        time: `${Math.round(duration * 0.6)} mins`,
-        distance: `${(distance * 1.2).toFixed(1)} km`,
-        emissions: `${((distance * 1.2) * 0.13).toFixed(1)} kg CO₂`,
-        emissionReduction: '35%',
+        time: `${drivingTime} mins`,
+        distance: `${distance.toFixed(1)} km`,
+        emissions: `${(distance * emissionFactors.carpool).toFixed(2)} kg CO₂`,
+        emissionReduction: `${Math.round((1 - emissionFactors.carpool / emissionFactors.car) * 100)}%`,
         tags: ['shared', 'community']
       }
     ];
@@ -122,6 +162,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         destination,
         schedule: "Flexible",
         available_seats: 3,
+        status: 'active'  // Explicitly set status to active
       });
 
       if (error) throw error;
