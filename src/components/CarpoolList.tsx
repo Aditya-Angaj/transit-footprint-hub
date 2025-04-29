@@ -1,12 +1,23 @@
 
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Car, Users, Calendar, MapPin } from 'lucide-react';
+import { Car, Users, Calendar, MapPin, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const CarpoolList = () => {
   const { toast } = useToast();
@@ -132,6 +143,43 @@ const CarpoolList = () => {
     }
   };
 
+  const handleDeleteCarpool = async (carpoolId: string) => {
+    try {
+      // Check if user is the owner of the carpool
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to delete carpools",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('carpools')
+        .update({ status: 'deleted' })
+        .eq('id', carpoolId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Your carpool has been deleted.",
+      });
+      
+      // Refresh the carpools list
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete carpool. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="py-8 flex justify-center">
@@ -198,6 +246,31 @@ const CarpoolList = () => {
                       <span>{participantCount} joined</span>
                     </div>
                   </CardContent>
+
+                  <CardFooter>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="w-full">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Carpool
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Carpool</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this carpool? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteCarpool(carpool.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </CardFooter>
                 </Card>
               );
             })}
