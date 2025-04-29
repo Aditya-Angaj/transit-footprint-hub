@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Bike, Bus, Car, Footprints, Train, Caravan } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -8,7 +7,19 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 // Improved algorithm to estimate distances based on city names
-const calculateImprovedDistance = (origin: string, destination: string) => {
+const calculateImprovedDistance = (origin: string, destination: string, providedDistance: number | null) => {
+  // If we already have a calculated distance, use it
+  if (providedDistance !== null) {
+    return {
+      distance: providedDistance,
+      drivingTime: Math.ceil((providedDistance / 50) * 60), // in minutes
+      walkingTime: Math.ceil((providedDistance / 5) * 60),
+      bikingTime: Math.ceil((providedDistance / 15) * 60),
+      busTime: Math.ceil((providedDistance / 30) * 60),
+      trainTime: Math.ceil((providedDistance / 60) * 60)
+    };
+  }
+  
   // This is a simplified calculation to make the distances more realistic
   // We hash the origin and destination names to create somewhat consistent distances
   const hash = (str: string) => {
@@ -44,9 +55,10 @@ const calculateImprovedDistance = (origin: string, destination: string) => {
 interface TransportModeProps {
   origin: string;
   destination: string;
+  calculatedDistance?: number | null;
 }
 
-const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) => {
+const TransportModes: React.FC<TransportModeProps> = ({ origin, destination, calculatedDistance = null }) => {
   const [routes, setRoutes] = useState<Array<{
     id: number;
     mode: string;
@@ -56,6 +68,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
     distance: string;
     emissions: string;
     emissionReduction: string;
+    weeklyEmissions: string;
     tags: string[];
   }>>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +88,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
       bikingTime, 
       busTime, 
       trainTime 
-    } = calculateImprovedDistance(origin, destination);
+    } = calculateImprovedDistance(origin, destination, calculatedDistance);
 
     // Emissions factors (kg CO2 per km)
     const emissionFactors = {
@@ -85,6 +98,11 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
       train: 0.041,
       bike: 0,
       walk: 0
+    };
+
+    // Calculate different route options with weekly impact
+    const calculateWeeklyEmissions = (dailyEmissions: number) => {
+      return (dailyEmissions * 5).toFixed(2); // Assuming 5 working days
     };
 
     // Calculate different route options
@@ -98,6 +116,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         distance: `${distance.toFixed(1)} km`,
         emissions: '0 kg CO₂',
         emissionReduction: '100%',
+        weeklyEmissions: '0 kg CO₂/week',
         tags: ['zero-emissions', 'exercise']
       },
       {
@@ -109,6 +128,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         distance: `${distance.toFixed(1)} km`,
         emissions: `${(distance * emissionFactors.bus).toFixed(2)} kg CO₂`,
         emissionReduction: `${Math.round((1 - emissionFactors.bus / emissionFactors.car) * 100)}%`,
+        weeklyEmissions: `${calculateWeeklyEmissions(distance * emissionFactors.bus)} kg CO₂/week`,
         tags: ['low-emissions', 'convenient']
       },
       {
@@ -120,6 +140,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         distance: `${distance.toFixed(1)} km`,
         emissions: '0 kg CO₂',
         emissionReduction: '100%',
+        weeklyEmissions: '0 kg CO₂/week',
         tags: ['zero-emissions', 'exercise']
       },
       {
@@ -131,6 +152,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
         distance: `${distance.toFixed(1)} km`,
         emissions: `${(distance * emissionFactors.carpool).toFixed(2)} kg CO₂`,
         emissionReduction: `${Math.round((1 - emissionFactors.carpool / emissionFactors.car) * 100)}%`,
+        weeklyEmissions: `${calculateWeeklyEmissions(distance * emissionFactors.carpool)} kg CO₂/week`,
         tags: ['shared', 'community']
       }
     ];
@@ -141,7 +163,7 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
 
   useEffect(() => {
     calculateRoutes();
-  }, [origin, destination]);
+  }, [origin, destination, calculatedDistance]);
 
   const handleStartCarpool = async () => {
     try {
@@ -212,9 +234,13 @@ const TransportModes: React.FC<TransportModeProps> = ({ origin, destination }) =
                 <span className="text-gray-500">Distance:</span>
                 <span className="font-medium">{route.distance}</span>
               </div>
-              <div className="flex justify-between text-sm mb-4">
-                <span className="text-gray-500">CO₂ Emissions:</span>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-500">Daily CO₂:</span>
                 <span className="font-medium text-green-600">{route.emissions}</span>
+              </div>
+              <div className="flex justify-between text-sm mb-4">
+                <span className="text-gray-500">Weekly CO₂:</span>
+                <span className="font-medium text-green-600">{route.weeklyEmissions}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
