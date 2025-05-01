@@ -53,6 +53,7 @@ const TravelLog = () => {
         return;
       }
       
+      // Fixed Supabase call to match our database schema
       const { error } = await supabase
         .from('travel_logs')
         .insert({
@@ -73,6 +74,8 @@ const TravelLog = () => {
       });
       
       // Reset form fields except date
+      setOrigin('');
+      setDestination('');
       setNotes('');
       
     } catch (error: any) {
