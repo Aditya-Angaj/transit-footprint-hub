@@ -7,6 +7,7 @@ import CommunitySection from '@/components/CommunitySection';
 import TransitUpdates from '@/components/TransitUpdates';
 import Footer from '@/components/Footer';
 import CarpoolList from '@/components/CarpoolList';
+import TravelLog from '@/components/TravelLog';
 
 const Index = () => {
   return (
@@ -39,6 +40,15 @@ const Index = () => {
             <CarpoolList />
           </div>
         </div>
+        
+        {/* New Travel Log Section */}
+        <div className="py-8 bg-green-50">
+          <div className="container px-4 mx-auto">
+            <h2 className="text-2xl font-bold text-green-800 mb-6">Track Your Journeys</h2>
+            <TravelLog />
+          </div>
+        </div>
+        
         <CarbonCalculator />
         <CommunitySection />
         <TransitUpdates />
